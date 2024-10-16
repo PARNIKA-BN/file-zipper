@@ -1,0 +1,102 @@
+// Huffman Coding Algorithm
+
+// Step 1: Frequency Calculation
+// Input: text (string)
+// Output: freq (unordered_map<char, int>)
+freq := {}
+for each character ch in text do
+    if ch is in freq then
+        freq[ch] := freq[ch] + 1
+    else
+        freq[ch] := 1
+
+// Step 2: Build Huffman Tree
+// Input: freq (unordered_map<char, int>)
+// Output: root (Node)
+priorityQueue := new priority_queue<Node*, vector<Node*>, comp>
+for each pair (ch, frequency) in freq do
+    node := getNode(ch, frequency, nullptr, nullptr)
+    priorityQueue.push(node)
+
+while priorityQueue.size() > 1 do
+    left := priorityQueue.top()
+    priorityQueue.pop()
+    right := priorityQueue.top()
+    priorityQueue.pop()
+    sum := left.freq + right.freq
+    node := getNode('\0', sum, left, right)
+    priorityQueue.push(node)
+
+root := priorityQueue.top()
+
+// Step 3: Generate Huffman Codes
+// Input: root (Node)
+// Output: huffmanCode (unordered_map<char, string>)
+huffmanCode := {}
+function encode(root, str)
+    if root is null then return
+    if root.left is null and root.right is null then
+        huffmanCode[root.ch] := str
+    encode(root.left, str + "0")
+    encode(root.right, str + "1")
+
+encode(root, "")
+
+// Step 4: Encode Text
+// Input: text (string), huffmanCode (unordered_map<char, string>)
+// Output: encodedString (string)
+encodedString := ""
+for each character ch in text do
+    encodedString := encodedString + huffmanCode[ch]
+
+// Step 5: Write Huffman Tree and Encoded Text to File
+// Input: root (Node), encodedString (string), outFile (ofstream)
+function writeHuffmanTree(root, outFile)
+    if root is null then
+        outFile.put('0')
+        return
+    if root.left is null and root.right is null then
+        outFile.put('1')
+        outFile.put(root.ch)
+        return
+    outFile.put('0')
+    writeHuffmanTree(root.left, outFile)
+    writeHuffmanTree(root.right, outFile)
+
+writeHuffmanTree(root, outFile)
+outFile.write(encodedString)
+
+// Huffman Decompression Algorithm
+
+// Step 1: Read Huffman Tree from File
+// Input: inFile (ifstream)
+// Output: root (Node)
+function readHuffmanTree(inFile)
+    bit := inFile.get()
+    if bit == '0' then
+        left := readHuffmanTree(inFile)
+        right := readHuffmanTree(inFile)
+        return getNode('\0', 0, left, right)
+    if bit == '1' then
+        return getNode(inFile.get(), 0, nullptr, nullptr)
+    return nullptr
+
+root := readHuffmanTree(inFile)
+
+// Step 2: Decode Encoded Text
+// Input: root (Node), encodedString (string)
+// Output: decodedText (string)
+function decode(root, index, encodedString, outFile)
+    if root is null then return
+    if root.left is null and root.right is null then
+        outFile.put(root.ch)
+        return
+    index := index + 1
+    if encodedString[index] == '0' then
+        decode(root.left, index, encodedString, outFile)
+    else
+        decode(root.right, index, encodedString, outFile)
+
+index := -1
+while index < length(encodedString) - 1 do
+    decode(root, index, encodedString, outFile)

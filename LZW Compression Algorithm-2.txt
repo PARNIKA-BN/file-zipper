@@ -1,0 +1,70 @@
+// LZW Compression Algorithm
+
+// Step 1: Initialize Dictionary
+// Input: None
+// Output: dictionary (unordered_map<string, int>)
+dictionary := {}
+for i from 0 to 255 do
+    dictionary[string(1, char(i))] := i
+dictSize := 256
+
+// Step 2: Compress Text
+// Input: text (string)
+// Output: compressed (vector<int>)
+w := ""
+compressed := []
+for each character c in text do
+    wc := w + c
+    if wc is in dictionary then
+        w := wc
+    else
+        compressed.push(dictionary[w])
+        dictionary[wc] := dictSize
+        dictSize := dictSize + 1
+        w := string(1, c)
+
+if w is not empty then
+    compressed.push(dictionary[w])
+
+// Step 3: Write Compressed Data to File
+// Input: compressed (vector<int>), outFile (ofstream)
+for each code in compressed do
+    outFile.write(bitset<12>(code))
+
+// LZW Decompression Algorithm
+
+// Step 1: Read Compressed Data from File
+// Input: inFile (ifstream)
+// Output: compressed (vector<int>)
+compressed := []
+bitString := ""
+while not inFile.eof() do
+    bitString := bitString + inFile.get()
+for i from 0 to length(bitString) - 1 step 12 do
+    compressed.push(bitset<12>(bitString.substr(i, 12)).to_ulong())
+
+// Step 2: Initialize Dictionary
+// Input: None
+// Output: dictionary (unordered_map<int, string>)
+dictionary := {}
+for i from 0 to 255 do
+    dictionary[i] := string(1, char(i))
+dictSize := 256
+
+// Step 3: Decompress Data
+// Input: compressed (vector<int>)
+// Output: decompressed (string)
+w := string(1, char(compressed[0]))
+outFile.write(w)
+entry := ""
+for i from 1 to length(compressed) - 1 do
+    k := compressed[i]
+    if k is in dictionary then
+        entry := dictionary[k]
+    else if k == dictSize then
+        entry := w + w[0]
+
+    outFile.write(entry)
+    dictionary[dictSize] := w + entry[0]
+    dictSize := dictSize + 1
+    w := entry
